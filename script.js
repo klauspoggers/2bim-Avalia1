@@ -1,40 +1,61 @@
-
 let id_token = null;
 
-function handleCredentialResponse(response) {
+window.handleCredentialResponse = function(response) {
     id_token = response.credential;
-    console.log("Login realizado! Token armazenado com sucesso.");
-}
-import { gerarDesenho, numeroValido } from "./desenho.js";
+    console.log("Login realizado com sucesso!");
+};
 
 const formulario = document.getElementById("formulario");
 const campoNumero = document.getElementById("numero");
-const campoEmail = document.getElementById("email");
 const area = document.getElementById("desenho");
 const mensagem = document.getElementById("mensagem");
 const botaoBaixar = document.getElementById("baixar");
 
 let svgAtual = "";
 
-formulario.addEventListener("submit", (evento) => {
+formulario.addEventListener("submit", async (evento) => {
   evento.preventDefault();
   mensagem.textContent = "";
 
   const numero = Number(campoNumero.value);
-  const email = campoEmail.value.trim();
 
-  if (!numeroValido(numero)) {
+  if (!Number.isInteger(numero) || numero < 1 || numero > 100) {
     mensagem.textContent = "Digite um inteiro entre 1 e 100.";
     return;
   }
-  if (email === "") {
-    mensagem.textContent = "Informe um e-mail.";
+  if (!id_token) {
+    mensagem.textContent = "Por favor, inicie sessão com o Google primeiro.";
     return;
   }
 
-  svgAtual = gerarDesenho(numero, email);
-  area.innerHTML = svgAtual;
-  botaoBaixar.hidden = false;
+  area.innerHTML = "A gerar desenho no servidor...";
+  botaoBaixar.hidden = true;
+
+  try {
+    const resposta = await fetch('/api/desenho', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + id_token 
+        },
+        body: JSON.stringify({ numero: numero }) 
+    });
+
+    if (resposta.status === 200) {
+        svgAtual = await resposta.text();
+        area.innerHTML = svgAtual;
+        botaoBaixar.hidden = false;
+    } else if (resposta.status === 400 || resposta.status === 401) {
+        area.innerHTML = "";
+        mensagem.textContent = `Erro ${resposta.status}: Não foi possível gerar o desenho. Verifique a autenticação e os dados.`;
+    } else {
+        area.innerHTML = "";
+        mensagem.textContent = `Erro inesperado: Código ${resposta.status}`;
+    }
+  } catch (erro) {
+    area.innerHTML = "";
+    mensagem.textContent = "Erro na comunicação com o servidor.";
+  }
 });
 
 botaoBaixar.addEventListener("click", () => {
