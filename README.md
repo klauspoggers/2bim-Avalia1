@@ -22,6 +22,6 @@ Framework preset: `None`. Build command: vazio. Build output directory: `public`
 
 ## Identificação (preencha após o fork)
 
-Nome: 
-RA: 
-URL: https://
+Nome: Klaus Albino da silva 
+RA: 2025207094
+URL: https://2bim-avalia1.albinoklaus1.workers.dev
