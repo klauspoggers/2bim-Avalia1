@@ -1,69 +1,76 @@
-let id_token = null;
+let tokenGoogle = "";
 
 window.handleCredentialResponse = function(response) {
-    id_token = response.credential;
-    console.log("Login realizado com sucesso!");
+  tokenGoogle = response.credential;
+  
+  const mensagem = document.getElementById('mensagem');
+  if (mensagem) {
+    mensagem.textContent = "Login efetuado com sucesso! Escolha o número e clique em Desenhar.";
+    mensagem.style.color = "#4CAF50";
+  }
 };
 
-const formulario = document.getElementById("formulario");
-const campoNumero = document.getElementById("numero");
-const area = document.getElementById("desenho");
-const mensagem = document.getElementById("mensagem");
-const botaoBaixar = document.getElementById("baixar");
+const formulario = document.getElementById('formulario');
+const campoNumero = document.getElementById('numero');
+const mensagem = document.getElementById('mensagem');
+const areaDesenho = document.getElementById('desenho');
+const botaoBaixar = document.getElementById('baixar');
 
-let svgAtual = "";
-
-formulario.addEventListener("submit", async (evento) => {
+formulario.addEventListener('submit', async (evento) => {
   evento.preventDefault();
-  mensagem.textContent = "";
+
+  if (!tokenGoogle) {
+    mensagem.textContent = "Por favor, inicie sessão com o Google primeiro.";
+    mensagem.style.color = "#f44336";
+    return;
+  }
 
   const numero = Number(campoNumero.value);
 
-  if (!Number.isInteger(numero) || numero < 1 || numero > 100) {
-    mensagem.textContent = "Digite um inteiro entre 1 e 100.";
-    return;
-  }
-  if (!id_token) {
-    mensagem.textContent = "Por favor, inicie sessão com o Google primeiro.";
-    return;
-  }
-
-  area.innerHTML = "A gerar desenho no servidor...";
-  botaoBaixar.hidden = true;
+  mensagem.textContent = "Gerando o desenho no servidor...";
+  mensagem.style.color = "#ffffff";
+  areaDesenho.innerHTML = "";
+  if (botaoBaixar) botaoBaixar.hidden = true;
 
   try {
     const resposta = await fetch('/api/desenho', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + id_token 
-        },
-        body: JSON.stringify({ numero: numero }) 
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${tokenGoogle}`
+      },
+      body: JSON.stringify({ numero: numero })
     });
 
     if (resposta.status === 200) {
-        svgAtual = await resposta.text();
-        area.innerHTML = svgAtual;
-        botaoBaixar.hidden = false;
+      const svgData = await resposta.text();
+      areaDesenho.innerHTML = svgData;
+      mensagem.textContent = "";
+      if (botaoBaixar) botaoBaixar.hidden = false;
     } else if (resposta.status === 400 || resposta.status === 401) {
-        area.innerHTML = "";
-        mensagem.textContent = `Erro ${resposta.status}: Não foi possível gerar o desenho. Verifique a autenticação e os dados.`;
+      mensagem.textContent = `Erro ${resposta.status}: Não foi possível gerar o desenho. Verifique os dados e o login.`;
+      mensagem.style.color = "#f44336";
     } else {
-        area.innerHTML = "";
-        mensagem.textContent = `Erro inesperado: Código ${resposta.status}`;
+      mensagem.textContent = `Erro inesperado: Código ${resposta.status}`;
+      mensagem.style.color = "#f44336";
     }
   } catch (erro) {
-    area.innerHTML = "";
     mensagem.textContent = "Erro na comunicação com o servidor.";
+    mensagem.style.color = "#f44336";
   }
 });
 
-botaoBaixar.addEventListener("click", () => {
-  const arquivo = new Blob([svgAtual], { type: "image/svg+xml" });
-  const url = URL.createObjectURL(arquivo);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "exemplo.svg";
-  link.click();
-  URL.revokeObjectURL(url);
-});
+if (botaoBaixar) {
+  botaoBaixar.addEventListener('click', () => {
+    const svgContent = areaDesenho.innerHTML;
+    if (!svgContent) return;
+
+    const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'exemplo.svg';
+    link.click();
+    URL.revokeObjectURL(url);
+  });
+}
