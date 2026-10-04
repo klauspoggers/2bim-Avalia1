@@ -1,8 +1,10 @@
-// script.js
-// Versao inicial: todo o trabalho acontece no navegador.
-// A tarefa consiste em levar gerarDesenho para o servidor (Pages Functions)
-// e fazer esta pagina apenas enviar o numero e exibir a resposta.
 
+let id_token = null;
+
+function handleCredentialResponse(response) {
+    id_token = response.credential;
+    console.log("Login realizado! Token armazenado com sucesso.");
+}
 import { gerarDesenho, numeroValido } from "./desenho.js";
 
 const formulario = document.getElementById("formulario");
