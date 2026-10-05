@@ -1,11 +1,76 @@
-javascript
-try {
-    const resposta = await fetch('/api/desenho', { ... });
-    if (!resposta.ok) {
-        throw new Error("Erro do servidor");
+let tokenGoogle = "";
+
+window.handleCredentialResponse = function(response) {
+  tokenGoogle = response.credential;
+  
+  const mensagem = document.getElementById('mensagem');
+  if (mensagem) {
+    mensagem.textContent = "✅ Login efetuado com sucesso! Escolha o número e clique em Desenhar.";
+    mensagem.style.color = "#4CAF50";
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  const formulario = document.getElementById('formulario');
+  const campoNumero = document.getElementById('numero');
+  const mensagem = document.getElementById('mensagem');
+  const areaDesenho = document.getElementById('desenho');
+  const botaoBaixar = document.getElementById('baixar');
+
+  formulario.addEventListener('submit', async (evento) => {
+    evento.preventDefault();
+
+    if (!tokenGoogle) {
+      mensagem.textContent = "❌ Por favor, inicie sessão com o Google primeiro.";
+      mensagem.style.color = "#f44336";
+      return;
     }
-    // ...
-} catch (erro) {
-    // É aqui que ele mostra aquela mensagem na tela do site!
-    divErro.innerText = "❌ Erro 500: Não foi possível gerar o desenho. Verifique as credenciais no Cloudflare.";
-}
+
+    const numero = Number(campoNumero.value);
+
+    mensagem.textContent = "⏳ A gerar o desenho no servidor...";
+    mensagem.style.color = "#ffffff";
+    areaDesenho.innerHTML = "";
+    if (botaoBaixar) botaoBaixar.hidden = true;
+
+    try {
+      const resposta = await fetch('/api/desenho', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokenGoogle}`
+        },
+        body: JSON.stringify({ numero: numero })
+      });
+
+      if (resposta.ok) {
+        const svgData = await resposta.text();
+        areaDesenho.innerHTML = svgData;
+        mensagem.textContent = ""; 
+        if (botaoBaixar) botaoBaixar.hidden = false;
+      } else {
+        const textoErro = await resposta.text();
+        mensagem.textContent = `❌ Erro ${resposta.status}: ${textoErro}`;
+        mensagem.style.color = "#f44336";
+      }
+    } catch (erro) {
+      mensagem.textContent = "❌ Falha de comunicação com o servidor.";
+      mensagem.style.color = "#f44336";
+    }
+  });
+
+  if (botaoBaixar) {
+    botaoBaixar.addEventListener('click', () => {
+      const svgContent = areaDesenho.innerHTML;
+      if (!svgContent) return;
+
+      const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'desenho.svg';
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+  }
+});
