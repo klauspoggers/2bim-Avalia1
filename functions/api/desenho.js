@@ -1,15 +1,13 @@
+javascript
 export async function onRequestPost(context) {
   try {
-    const { request, env } = context;
+    const { request } = context;
 
     if (request.method !== 'POST') {
       return new Response('Method Not Allowed', { status: 405 });
     }
 
-    // Valida se a variável de ambiente existe no Cloudflare
-    if (!env || !env.GOOGLE_CLIENT_ID) {
-      return new Response('Erro: GOOGLE_CLIENT_ID não configurado no Cloudflare', { status: 500 });
-    }
+    const CLIENT_ID_FIXO = "259260099061-mkhjaqululp4rnctuaeqbmf2ih9c9ojm.apps.googleusercontent.com";
 
     let corpo;
     try {
@@ -37,8 +35,8 @@ export async function onRequestPost(context) {
 
     const tokenInfo = await googleResponse.json();
 
-    if (tokenInfo.aud !== env.GOOGLE_CLIENT_ID) {
-      return new Response('Audience diferente do Client ID', { status: 401 });
+    if (tokenInfo.aud !== CLIENT_ID_FIXO) {
+      return new Response(`Audience incorreto. Recebido: ${tokenInfo.aud}`, { status: 401 });
     }
 
     const email = tokenInfo.email || "usuario@desconhecido.com";
