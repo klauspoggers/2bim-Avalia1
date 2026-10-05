@@ -1,6 +1,7 @@
-export async function onRequest(context) {
-    const { request, env } = context;
+export async function onRequestPost(context) {
+  const apiKey = context.env.GOOGLE_CLIENT_ID; 
 
+}
     if (request.method !== 'POST') {
         return new Response('Method Not Allowed', { status: 405 });
     }
