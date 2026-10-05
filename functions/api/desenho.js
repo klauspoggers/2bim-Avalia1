@@ -1,5 +1,3 @@
-import { gerarDesenho } from '../../lib/desenho.js';
-
 export async function onRequest(context) {
     const { request, env } = context;
 
